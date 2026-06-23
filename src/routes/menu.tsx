@@ -2,14 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
 import { Tag, type TagKind } from "@/components/Tag";
 import { Daisy } from "@/components/Daisy";
+import { useLanguage } from "@/routes/languagecontext";
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
     meta: [
       { title: "Menu — μαργαριτα" },
       { name: "description", content: "Pizzas, pasta, spritz, coffee & more. Browse the full μαργαριτα menu." },
-      { property: "og:title", content: "Menu — μαργαριτα" },
-      { property: "og:description", content: "Wood-fired pizza, fresh pasta, spritz and coffee." },
     ],
   }),
   component: MenuPage,
@@ -18,7 +17,7 @@ export const Route = createFileRoute("/menu")({
 type Item = { name: string; desc: string; price: string; tags?: TagKind[] };
 type Section = { title: string; blurb?: string; items: Item[] };
 
-const SECTIONS: Section[] = [
+const SECTIONS_EN: Section[] = [
   {
     title: "Starters",
     blurb: "Little things to begin the love affair.",
@@ -81,28 +80,100 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const SECTIONS_EL: Section[] = [
+  {
+    title: "Ορεκτικά",
+    blurb: "Μικρές μπουκιές για να ξεκινήσει ο έρωτας.",
+    items: [
+      { name: "Focaccia della Casa", desc: "Δενδρολίβανο, θαλασσινό αλάτι, έξτρα παρθένο ελαιόλαδο.", price: "€5", tags: ["V"] },
+      { name: "Burrata & Peach", desc: "Κρεμώδης burrata, ψητό ροδάκινο, βασιλικός, ροζ πιπέρι.", price: "€9.50", tags: ["V", "STAR"] },
+      { name: "Olive Marinate", desc: "Ελιές Castelvetrano, ξύσμα πορτοκαλιού, τσίλι.", price: "€4", tags: ["VG"] },
+      { name: "Polpette al Sugo", desc: "Κεφτεδάκια από μοσχάρι & χοιρινό σιγομαγειρεμένα σε σάλτσα ντομάτας.", price: "€7.50" },
+    ],
+  },
+  {
+    title: "Σαλάτες",
+    items: [
+      { name: "Insalata Margarita", desc: "Ντοματίνια heirloom, mozzarella di bufala, βασιλικός, βαλσάμικο.", price: "€8.50", tags: ["V", "STAR"] },
+      { name: "Verde Forte", desc: "Ανάμεικτα φύλλα, φινόκιο, μήλο, καρύδι, dressing λεμονιού.", price: "€7", tags: ["VG"] },
+      { name: "Cesare", desc: "Μαρούλι Romaine, dressing με αντζούγιες, παρμεζάνα, κρουτόν προζυμιού.", price: "€8" },
+    ],
+  },
+  {
+    title: "Πίτσες",
+    blurb: "Ψημένες σε ξυλόφουρνο. Ζύμη 48ωρης ωρίμανσης.",
+    items: [
+      { name: "Margarita Classica", desc: "San Marzano, fior di latte, βασιλικός, ελαιόλαδο.", price: "€9", tags: ["V", "STAR"] },
+      { name: "Diavola", desc: "Ντομάτα, μοτσαρέλα, πικάντικο σαλάμι, μέλι με τσίλι.", price: "€11" },
+      { name: "Quattro Formaggi", desc: "Μοτσαρέλα, γκοργκοντζόλα, φοντίνα, παρμεζάνα.", price: "€12", tags: ["V"] },
+      { name: "Funghi", desc: "Τριλογία μανιταριών, ταλέτζιο, θυμάρι, λάδι τρούφας.", price: "€12.50", tags: ["V"] },
+      { name: "Vegana del Sole", desc: "Ντομάτα, ψητό κολοκύθι, πιπεριές, ελιές, vegan μοτσαρέλα.", price: "€11", tags: ["VG"] },
+      { name: "Prosciutto e Rucola", desc: "Μοτσαρέλα, prosciutto crudo, ρόκα, παρμεζάνα.", price: "€13" },
+    ],
+  },
+  {
+    title: "Ζυμαρικά",
+    items: [
+      { name: "Cacio e Pepe", desc: "Tonnarelli, πεκορίνο ρομάνο, φρεσκοτριμμένο μαύρο πιπέρι.", price: "€11", tags: ["V", "STAR"] },
+      { name: "Rigatoni all'Arrabbiata", desc: "Ντομάτα, σκόρδο, τσίλι, μαϊντανός.", price: "€10", tags: ["VG"] },
+      { name: "Tagliatelle al Ragù", desc: "Σιγομαγειρεμένο ραγού από μοσχάρι & χοιρινό, παρμεζάνα.", price: "€13" },
+      { name: "Gnocchi al Pesto", desc: "Νιόκι πατάτας, πέστο βασιλικού, πράσινα φασολάκια, κουκουνάρι.", price: "€12", tags: ["V"] },
+    ],
+  },
+  {
+    title: "Spritz",
+    blurb: "Δροσιστικά, παιχνιδιάρικα, σερβίρονται μέχρι αργά.",
+    items: [
+      { name: "Aperol Spritz", desc: "Aperol, prosecco, σόδα, πορτοκάλι.", price: "€6.50", tags: ["STAR"] },
+      { name: "Campari Spritz", desc: "Campari, prosecco, σόδα, γκρέιπφρουτ.", price: "€7" },
+      { name: "Hugo", desc: "Σαμπούκος, prosecco, μέντα, μοσχολέμονο.", price: "€7" },
+      { name: "Limoncello Spritz", desc: "Limoncello, prosecco, σόδα, λεμονοθύμαρο.", price: "€7.50" },
+      { name: "St-Germain Spritz", desc: "Λικέρ σαμπούκου, prosecco, αγγούρι.", price: "€8" },
+    ],
+  },
+  {
+    title: "Καφές",
+    items: [
+      { name: "Espresso", desc: "Χαρμάνι του μαγαζιού, διπλή δόση.", price: "€2", tags: ["V"] },
+      { name: "Cappuccino", desc: "Espresso, ζεστό γάλα, βελούδινος αφρός.", price: "€3", tags: ["V"] },
+      { name: "Freddo Espresso", desc: "Χτυπημένος espresso με πάγο, αλά ελληνικά.", price: "€3", tags: ["V"] },
+      { name: "Affogato", desc: "Espresso περιχυμένος σε παγωτό βανίλια.", price: "€4.50", tags: ["V", "STAR"] },
+      { name: "Oat Latte", desc: "Διπλός espresso, ζεστό γάλα βρώμης.", price: "€3.50", tags: ["VG"] },
+    ],
+  },
+];
+
 function MenuPage() {
+  const { isEl } = useLanguage();
+  const sections = isEl ? SECTIONS_EL : SECTIONS_EN;
+
   return (
     <Layout>
       <section className="relative overflow-hidden border-b border-burgundy/10">
         <Daisy className="absolute -top-10 -left-10 w-44 h-44 opacity-50 spin-slow" petalColor="var(--pink)" />
         <Daisy className="absolute bottom-0 right-8 w-32 h-32 opacity-60" petalColor="var(--pink)" />
         <div className="mx-auto max-w-5xl px-5 md:px-8 py-20 md:py-28 text-center relative">
-          <span className="text-xs uppercase tracking-[0.3em] text-burgundy/60">Eat · Drink · Repeat</span>
-          <h1 className="font-display text-7xl md:text-9xl text-burgundy mt-4 lowercase">the menu</h1>
+          <span className="text-xs uppercase tracking-[0.3em] text-burgundy/60">
+            {isEl ? "Φαε · Πιες · Επαναλαβε" : "Eat · Drink · Repeat"}
+          </span>
+          <h1 className="font-display text-7xl md:text-9xl text-burgundy mt-4 lowercase">
+            {isEl ? "το μενού" : "the menu"}
+          </h1>
           <p className="mt-6 max-w-xl mx-auto text-burgundy/80">
-            Hand-picked, hand-tossed, hand-poured. Prices in euros. A 5% service charge is added to tables of 6 or more.
+            {isEl 
+              ? "Διαλεγμένα στο χέρι, φτιαγμένα με μεράκι. Οι τιμές είναι σε ευρώ. Σε τραπέζια 6 ή περισσότερων ατόμων προστίθεται χρέωση σέρβις 5%."
+              : "Hand-picked, hand-tossed, hand-poured. Prices in euros. A 5% service charge is added to tables of 6 or more."}
           </p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <Tag kind="V" /><span className="text-xs text-burgundy/60">Vegetarian</span>
+            <Tag kind="V" /><span className="text-xs text-burgundy/60">{isEl ? "Χορτοφαγικό" : "Vegetarian"}</span>
             <Tag kind="VG" /><span className="text-xs text-burgundy/60">Vegan</span>
-            <Tag kind="STAR" /><span className="text-xs text-burgundy/60">Signature</span>
+            <Tag kind="STAR" /><span className="text-xs text-burgundy/60">{isEl ? "Σπεσιαλιτέ" : "Signature"}</span>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-5 md:px-8 py-16 md:py-24 space-y-20">
-        {SECTIONS.map((sec) => (
+        {sections.map((sec) => (
           <div key={sec.title}>
             <div className="flex items-end gap-4 mb-8">
               <Daisy className="w-8 h-8 shrink-0" petalColor="var(--pink)" />

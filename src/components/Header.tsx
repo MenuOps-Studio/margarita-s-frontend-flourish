@@ -2,16 +2,19 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Daisy } from "./Daisy";
-
-const links = [
-  { to: "/", label: "Home" },
-  { to: "/menu", label: "Menu" },
-  { to: "/reservations", label: "Reservations" },
-  { to: "/contact", label: "Contact" },
-] as const;
+import { useLanguage } from "@/routes/languagecontext";
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { isEl, toggleLanguage } = useLanguage();
+
+  const links = [
+    { to: "/", label: isEl ? "Αρχική" : "Home" },
+    { to: "/menu", label: isEl ? "Μενού" : "Menu" },
+    { to: "/reservations", label: isEl ? "Κρατήσεις" : "Reservations" },
+    { to: "/contact", label: isEl ? "Επικοινωνία" : "Contact" },
+  ] as const;
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-[color:var(--cream)]/85 border-b border-burgundy/15">
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 md:h-20 flex items-center justify-between">
@@ -36,12 +39,19 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleLanguage}
+            className="text-burgundy/80 hover:text-burgundy font-display tracking-wider text-xl transition-colors"
+            aria-label="Toggle language"
+          >
+            {isEl ? "EN" : "EL"}
+          </button>
           <Link
             to="/reservations"
             className="hidden sm:inline-flex items-center gap-2 bg-burgundy text-cream px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-burgundy/90 transition-all hover:scale-105"
           >
-            Book a Table
+            {isEl ? "Κλείσε Τραπέζι" : "Book a Table"}
           </Link>
           <button
             className="md:hidden text-burgundy"
@@ -71,7 +81,7 @@ export function Header() {
               onClick={() => setOpen(false)}
               className="mt-2 inline-flex justify-center bg-burgundy text-cream px-5 py-3 rounded-full font-semibold"
             >
-              Book a Table
+              {isEl ? "Κλείσε Τραπέζι" : "Book a Table"}
             </Link>
           </nav>
         </div>
