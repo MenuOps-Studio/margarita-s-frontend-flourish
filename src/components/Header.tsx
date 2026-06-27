@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Daisy } from "./Daisy";
 import { useLanguage } from "@/routes/languagecontext";
 
 export function Header() {
@@ -19,7 +18,15 @@ export function Header() {
     <header className="sticky top-0 z-50 backdrop-blur-md bg-[color:var(--cream)]/85 border-b border-burgundy/15">
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 md:h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group" onClick={() => setOpen(false)}>
-          <Daisy className="w-7 h-7 group-hover:spin-slow" petalColor="var(--pink)" />
+          
+          {/* PASTE YOUR IMAGE LINK HERE */}
+          <img 
+            src="https://scontent.fath5-1.fna.fbcdn.net/v/t39.30808-1/707693744_122095134411351501_6669157954688264884_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s200x200&_nc_cat=110&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=v-M-dwvsFq8Q7kNvwH1bG4N&_nc_oc=AdpvjzhedEC3lsPH4p8CZ6LBPk_Usn_OXqSrX5DEtmNZUPZeALKV7G2lBmz1tH3P8KA&_nc_zt=24&_nc_ht=scontent.fath5-1.fna&_nc_gid=7VkqN5J9XUa-Fd82048oCg&_nc_ss=7b2a8&oh=00_Af9CUjdCbZgr2-2AnitFExzTSIFdXNxoItBR6AyHn9wPxg&oe=6A40DBCD" 
+            alt="Μαργαρίτα Logo" 
+            className="w-8 h-8 md:w-10 md:h-10 object-contain transition-transform group-hover:scale-105" 
+          />
+          {/* --------------------------- */}
+
           <span className="font-display text-2xl md:text-3xl text-burgundy lowercase tracking-tight">
             μαργαριτα
           </span>
