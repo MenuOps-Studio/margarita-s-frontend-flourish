@@ -4,6 +4,7 @@ import { Daisy } from "@/components/Daisy";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/routes/languagecontext";
+import { supabase } from "@/lib/supabase"; 
 
 export const Route = createFileRoute("/reservations")({
   head: () => ({
@@ -29,11 +30,70 @@ const TIME_SLOTS = (() => {
 function ReservationsPage() {
   const { isEl } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const [guests, setGuests] = useState(2);
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const firstName = formData.get("firstName") as string;
+    const lastName = formData.get("lastName") as string;
+    const email = formData.get("email") as string;
+    const date = formData.get("date") as string;
+    const time = formData.get("time") as string;
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // 1. Αποστολή στη Βάση Δεδομένων (Supabase)
+    const { error } = await supabase.from("reservations").insert({
+      restaurant_id: 3, 
+      name: fullName, 
+      email: email,
+      date: date,
+      time: time,
+      guests: guests,
+      status: "PENDING"
+    });
+
+    if (error) {
+      console.error("Σφάλμα κατά την κράτηση:", error);
+      alert(isEl ? "Κάτι πήγε στραβά. Παρακαλώ δοκιμάστε ξανά." : "Something went wrong. Please try again.");
+      setIsSubmitting(false);
+      return;
+    } 
+
+    // 2. Αποστολή Email Αναμονής (EmailJS)
+    const statusMsg = isEl 
+      ? "Λάβαμε το αίτημα κράτησής σου και βρίσκεται σε ΑΝΑΜΟΝΗ. Μόλις ελέγξουμε τη διαθεσιμότητα, θα λάβεις νέο email επιβεβαίωσης!"
+      : "We received your reservation request and it is currently PENDING. Once we check our availability, you will receive a confirmation email!";
+
+    try {
+      await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: 'service_t7rq0kq',
+          template_id: 'template_pcwn622',
+          user_id: 'TR0cDisVNKLl4sAOE',
+          template_params: {
+            name: fullName,
+            email: email,
+            date: date,
+            time: time,
+            guests: guests,
+            status_message: statusMsg,
+            color: "#f59e0b" // Πορτοκαλί χρώμα για την αναμονή
+          }
+        })
+      });
+    } catch (emailErr) {
+      console.error("Σφάλμα κατά την αποστολή του Email:", emailErr);
+    }
+
+    // 3. Εμφάνιση μηνύματος επιτυχίας στην οθόνη
+    setIsSubmitting(false);
+    setSubmitted(true); 
   }
 
   return (
@@ -76,19 +136,19 @@ function ReservationsPage() {
               <form onSubmit={onSubmit} className="bg-card rounded-3xl p-7 md:p-10 border border-burgundy/15 shadow-[0_30px_60px_-30px_rgba(116,0,25,0.25)]">
                 <div className="grid sm:grid-cols-2 gap-5">
                   <Field label={isEl ? "Όνομα" : "First name"}>
-                    <input required type="text" className={inputCls} placeholder="Sofia" />
+                    <input required name="firstName" type="text" className={inputCls} placeholder="Sofia" />
                   </Field>
                   <Field label={isEl ? "Επίθετο" : "Last name"}>
-                    <input required type="text" className={inputCls} placeholder="Rossi" />
+                    <input required name="lastName" type="text" className={inputCls} placeholder="Rossi" />
                   </Field>
                   <Field label="Email" className="sm:col-span-2">
-                    <input required type="email" className={inputCls} placeholder="ciao@margarita.gr" />
+                    <input required name="email" type="email" className={inputCls} placeholder="ciao@margarita.gr" />
                   </Field>
                   <Field label={isEl ? "Ημερομηνία" : "Date"}>
-                    <input required type="date" className={inputCls} />
+                    <input required name="date" type="date" className={inputCls} />
                   </Field>
                   <Field label={isEl ? "Ώρα" : "Time"}>
-                    <select required defaultValue="" className={inputCls}>
+                    <select required name="time" defaultValue="" className={inputCls}>
                       <option value="" disabled>{isEl ? "Διάλεξε ώρα" : "Pick a time"}</option>
                       {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -104,10 +164,11 @@ function ReservationsPage() {
 
                 <button
                   type="submit"
-                  className="mt-8 w-full inline-flex items-center justify-center gap-3 bg-burgundy text-cream py-4 rounded-full font-display text-2xl hover:bg-burgundy/90 transition-all hover:scale-[1.01]"
+                  disabled={isSubmitting}
+                  className="mt-8 w-full inline-flex items-center justify-center gap-3 bg-burgundy text-cream py-4 rounded-full font-display text-2xl hover:bg-burgundy/90 transition-all hover:scale-[1.01] disabled:opacity-70 disabled:hover:scale-100"
                 >
-                  <Daisy className="w-6 h-6" petalColor="var(--pink)" centerColor="var(--cream)" />
-                  {isEl ? "Κράτηση" : "Reserve my table"}
+                  <Daisy className={`w-6 h-6 ${isSubmitting ? "spin-slow" : ""}`} petalColor="var(--pink)" centerColor="var(--cream)" />
+                  {isSubmitting ? (isEl ? "Αποστολή..." : "Sending...") : (isEl ? "Κράτηση" : "Reserve my table")}
                 </button>
                 <p className="text-xs text-burgundy/60 text-center mt-3">
                   {isEl 
@@ -133,4 +194,4 @@ function Field({ label, children, className = "" }: { label: string; children: R
       {children}
     </label>
   );
-}
+}m

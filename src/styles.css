@@ -44,16 +44,17 @@
 :root {
   --radius: 0.75rem;
 
-  /* Brand */
-  --cream: #FEF2E6;
-  --pink: #FFDFFE;
-  --burgundy: #740019;
+  /* Brand - Πιο σκούρα παλέτα */
+  --cream: #fcecdb; /* Λίγο πιο σκούρο cream */
+  --pink: #eab3ea;  /* Πιο απαλό pink */
+  --burgundy: #5d0014; /* Πιο βαθύ μπορντό */
 
-  --background: #FEF2E6;
-  --foreground: #740019;
+  /* Εδώ είναι η βασική αλλαγή για το background */
+  --background: #2d1e1e; /* Ένα πολύ σκούρο, θερμό καφέ/μπορντό background */
+  --foreground: #fcecdb; /* Ανοιχτό χρώμα κειμένου για αντίθεση */
 
-  --card: #FFFFFF;
-  --card-foreground: #740019;
+  --card: #ffffff; /* Σκούρο card */
+  --card-foreground: #fcecdb;
   --popover: #FFFFFF;
   --popover-foreground: #740019;
 
@@ -72,7 +73,7 @@
   --destructive: #740019;
   --destructive-foreground: #FEF2E6;
 
-  --border: #74001933;
+  --border: #74001966; /* Πιο έντονο border */
   --input: #74001933;
   --ring: #740019;
 }

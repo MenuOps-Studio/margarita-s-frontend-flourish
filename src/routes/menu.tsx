@@ -4,9 +4,9 @@ import { Tag, type TagKind } from "@/components/Tag";
 import { Daisy } from "@/components/Daisy";
 import { useLanguage } from "@/routes/languagecontext";
 import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
-import { Search, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase"; // <-- This imports your new connection!
+import { Search } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query"; // ΠΡΟΣΘΗΚΗ: useQueryClient
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
@@ -18,13 +18,16 @@ export const Route = createFileRoute("/menu")({
   component: MenuPage,
 });
 
-type Item = { name: string; desc: string; price: string; tags?: TagKind[] };
+type Item = { name: string; desc: string; price: string; tags?: TagKind[]; status: string };
 type Section = { title: string; blurb?: string; items: Item[] };
 
 function MenuPage() {
   const { isEl } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ΠΡΟΣΘΗΚΗ: Εργαλείο για ανανέωση του cache (Real-Time)
+  const queryClient = useQueryClient();
 
   // 1. FETCH DATA FROM SUPABASE
   const { data: dbItems, isLoading } = useQuery({
@@ -33,14 +36,36 @@ function MenuPage() {
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('restaurant_id', 3)
-        .eq('status', 'AVAILABLE')
-        .order('id', { ascending: true }); // Keeps items in the order you added them
+        .eq('restaurant_id', 3) // Το ID της Μαργαρίτας
+        .neq('status', 'HIDDEN') // Φέρνουμε τα πάντα ΕΚΤΟΣ από τα κρυμμένα
+        .order('id', { ascending: true });
 
       if (error) throw error;
       return data;
     }
   });
+
+  // --- ΝΕΟΣ ΚΩΔΙΚΑΣ: SUPABASE REAL-TIME ---
+  useEffect(() => {
+    // Φτιάχνουμε το "κανάλι" επικοινωνίας με τη βάση
+    const channel = supabase
+      .channel('realtime-margarita-menu')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'menu_items' },
+        () => {
+          // Μόλις αλλάξει κάτι, λέμε στο React Query να φέρει αθόρυβα τα νέα δεδομένα
+          queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+        }
+      )
+      .subscribe();
+
+    // Κλείνουμε το κανάλι αν ο χρήστης φύγει από τη σελίδα (για εξοικονόμηση πόρων)
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+  // ----------------------------------------
 
   // 2. ORGANIZE DATA INTO CATEGORIES AUTOMATICALLY
   const baseSections = useMemo(() => {
@@ -50,11 +75,31 @@ function MenuPage() {
     const orderedCategories: string[] = [];
 
     dbItems.forEach(item => {
-      // Pick language dynamically based on context
-      const catTitle = isEl 
-        ? (item.category || "") 
-        : (item.category_en || item.category || "");
-      
+      // 1. Ομαδοποιούμε ΠΑΝΤΑ με βάση τη βασική (Ελληνική) κατηγορία.
+      // Έτσι αποφεύγουμε τα διπλότυπα (π.χ. Pizzas και Πίτσες) 
+      const groupId = item.category || "Άλλα";
+
+      if (!sectionsMap.has(groupId)) {
+        orderedCategories.push(groupId);
+        
+        let blurb = "";
+        if (groupId === "Ορεκτικά") blurb = isEl ? "Μικρές μπουκιές για να ξεκινήσει ο έρωτας." : "Little things to begin the love affair.";
+        if (groupId === "Πίτσες") blurb = isEl ? "Ψημένες σε ξυλόφουρνο. Ζύμη 48ωρης ωρίμανσης." : "Wood-fired. 48-hour cold-fermented dough.";
+        if (groupId === "Spritz") blurb = isEl ? "Δροσιστικά, παιχνιδιάρικα, σερβίρονται μέχρι αργά." : "Fizzy, flirty, served until late.";
+
+        sectionsMap.set(groupId, { 
+          title: isEl ? groupId : (item.category_en || groupId), 
+          blurb, 
+          items: [] 
+        });
+      } else {
+        // 2. Αν η κατηγορία υπάρχει, αλλά βρήκαμε πιάτο που ΕΧΕΙ αγγλική κατηγορία,
+        // ενημερώνουμε τον τίτλο (σε περίπτωση που το πρώτο πιάτο δεν είχε category_en)
+        if (!isEl && item.category_en) {
+          sectionsMap.get(groupId)!.title = item.category_en;
+        }
+      }
+
       const itemName = isEl 
         ? (item.name_el || item.name || "") 
         : (item.name_en || item.name || "");
@@ -63,30 +108,16 @@ function MenuPage() {
         ? (item.description_el || "") 
         : (item.description_en || "");
 
-      // If category doesn't exist yet, create it
-      if (!sectionsMap.has(catTitle)) {
-        orderedCategories.push(catTitle);
-        
-        // Add the cute subtitles based on the category name
-        let blurb = "";
-        if (catTitle === "Starters" || catTitle === "Ορεκτικά") blurb = isEl ? "Μικρές μπουκιές για να ξεκινήσει ο έρωτας." : "Little things to begin the love affair.";
-        if (catTitle === "Pizzas" || catTitle === "Πίτσες") blurb = isEl ? "Ψημένες σε ξυλόφουρνο. Ζύμη 48ωρης ωρίμανσης." : "Wood-fired. 48-hour cold-fermented dough.";
-        if (catTitle === "Spritz") blurb = isEl ? "Δροσιστικά, παιχνιδιάρικα, σερβίρονται μέχρι αργά." : "Fizzy, flirty, served until late.";
-
-        sectionsMap.set(catTitle, { title: catTitle, blurb, items: [] });
-      }
-
-      // Hook up tags
       const tags: TagKind[] = [];
       if (item.is_chef_choice) tags.push("STAR");
-      // Note: You can add logic for 'V' or 'VG' here if you add those to your database later!
 
-      // Push item into its category
-      sectionsMap.get(catTitle)!.items.push({
+      // Περνάμε το status στο αντικείμενο του πιάτου
+      sectionsMap.get(groupId)!.items.push({
         name: itemName,
         desc: itemDesc,
         price: `€${Number(item.price).toFixed(2)}`,
-        tags: tags.length > 0 ? tags : undefined
+        tags: tags.length > 0 ? tags : undefined,
+        status: item.status 
       });
     });
 
@@ -114,7 +145,7 @@ function MenuPage() {
       {/* MENU HEADER */}
       <section className="relative overflow-hidden border-b border-burgundy/10 pb-10">
         <Daisy className="absolute -top-10 -left-10 w-44 h-44 opacity-50 spin-slow" petalColor="var(--pink)" />
-        <Daisy className="absolute bottom-0 right-8 w-32 h-32 opacity-60" petalColor="var(--pink)" />
+        <Daisy className="absolute bottom-0 right-8 w-32 h-32 opacity-60 spin-slow" petalColor="var(--pink)" />
         
         <FadeIn>
           <div className="mx-auto max-w-5xl px-5 md:px-8 pt-20 md:pt-28 text-center relative">
@@ -215,19 +246,42 @@ function MenuPage() {
                 </div>
 
                 <ul className="divide-y divide-burgundy/10">
-                  {sec.items.map((it) => (
-                    <li key={it.name} className="py-5 flex gap-4 items-baseline hover:bg-pink/10 transition-colors rounded-xl px-2 -mx-2">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-2xl text-burgundy">{it.name}</h3>
-                          {it.tags?.map((t) => <Tag key={t} kind={t} />)}
+                  {sec.items.map((it) => {
+                    // Λογική ελέγχου διαθεσιμότητας
+                    const isUnavailable = it.status === "UNAVAILABLE_TODAY" || it.status === "UNAVAILABLE";
+                    const isUnavailableToday = it.status === "UNAVAILABLE_TODAY";
+
+                    return (
+                      <li 
+                        key={it.name} 
+                        className={`py-5 flex gap-4 items-baseline transition-all rounded-xl px-2 -mx-2 ${
+                          isUnavailable ? "opacity-50 grayscale-[30%] pointer-events-none" : "hover:bg-pink/10"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className={`font-display text-2xl text-burgundy ${isUnavailable ? "line-through" : ""}`}>
+                              {it.name}
+                            </h3>
+                            {it.tags?.map((t) => <Tag key={t} kind={t} />)}
+                          </div>
+                          <p className="text-burgundy/70 text-sm mt-1 leading-relaxed max-w-xl">{it.desc}</p>
                         </div>
-                        <p className="text-burgundy/70 text-sm mt-1 leading-relaxed max-w-xl">{it.desc}</p>
-                      </div>
-                      <div className="border-b-2 border-dotted border-burgundy/30 flex-1 mb-2 hidden sm:block" />
-                      <span className="font-display text-2xl text-burgundy shrink-0">{it.price}</span>
-                    </li>
-                  ))}
+                        <div className="border-b-2 border-dotted border-burgundy/30 flex-1 mb-2 hidden sm:block" />
+                        
+                        {/* Δυναμική εμφάνιση τιμής ή ταμπελακίου ελλείψεων */}
+                        {isUnavailable ? (
+                          <span className="shrink-0 text-xs sm:text-sm font-bold text-red-500 uppercase tracking-widest bg-red-100/50 border border-red-200 px-3 py-1.5 rounded-md">
+                            {isUnavailableToday 
+                              ? (isEl ? "Εξαντληθηκε" : "Sold Out") 
+                              : (isEl ? "Μη Διαθεσιμο" : "Unavailable")}
+                          </span>
+                        ) : (
+                          <span className="font-display text-2xl text-burgundy shrink-0">{it.price}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </FadeIn>
             </div>

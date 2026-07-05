@@ -62,7 +62,7 @@ function Home() {
               <span className="w-8 h-px bg-burgundy/40" /> Άγρα · Σέρρες <span className="w-8 h-px bg-burgundy/40" />
             </span>
             <h1 className="font-display text-burgundy text-7xl sm:text-8xl md:text-[10rem] leading-[0.85] lowercase mb-10 md:mb-12">
-              μαργαριτα
+              μαργαρίτα
             </h1>
             <p className="max-w-xl mx-auto text-lg md:text-xl text-burgundy/80">
               {isEl 
