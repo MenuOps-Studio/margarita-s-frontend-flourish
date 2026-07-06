@@ -1,11 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 import { useLanguage } from "@/routes/languagecontext";
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const { isEl, toggleLanguage } = useLanguage();
+  
+  // 1. Δημιουργούμε το ref για το header
+  const headerRef = useRef<HTMLElement>(null);
 
   const links = [
     { to: "/", label: isEl ? "Αρχική" : "Home" },
@@ -14,8 +17,29 @@ export function Header() {
     { to: "/contact", label: isEl ? "Επικοινωνία" : "Contact" },
   ] as const;
 
+  // 2. Προσθέτουμε το useEffect που "ακούει" τα κλικ
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Αν το κλικ έγινε ΕΚΤΟΣ του header, κλείσε το μενού
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    // Ενεργοποιούμε τον listener μόνο όταν το μενού είναι ανοιχτό
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    
+    // Καθαρισμός όταν κλείνει το component ή το μενού
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-[color:var(--cream)]/85 border-b border-burgundy/15">
+    // 3. Προσθέτουμε το ref στο <header>
+    <header ref={headerRef} className="sticky top-0 z-50 backdrop-blur-md bg-[color:var(--cream)]/85 border-b border-burgundy/15">
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 md:h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group" onClick={() => setOpen(false)}>
           

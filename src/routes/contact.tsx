@@ -27,7 +27,7 @@ function ContactPage() {
           <span className="text-xs uppercase tracking-[0.3em] text-burgundy/60">
             {isEl ? "Πες ενα ciao" : "Say ciao"}
           </span>
-          <h1 className="font-display text-7xl md:text-9xl text-burgundy mt-4 lowercase">
+          <h1 className="font-display text-6xl md:text-8xl text-burgundy mt-4 lowercase">
             {isEl ? "επικοινωνία" : "contact"}
           </h1>
         </div>
