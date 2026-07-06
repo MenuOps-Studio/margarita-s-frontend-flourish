@@ -19,18 +19,47 @@ export const Route = createFileRoute("/")({
 });
 
 const getHighlights = (isEl: boolean) => [
-  { name: "Margarita Classica", desc: isEl ? "San Marzano, fior di latte, βασιλικός, ελαιόλαδο." : "San Marzano, fior di latte, basil, olive oil.", price: "€9", tag: "STAR" as const, cat: isEl ? "Σπεσιαλιτέ Πίτσα" : "Signature Pizza" },
-  { name: "Cacio e Pepe", desc: isEl ? "Tonnarelli, πεκορίνο, φρεσκοτριμμένο πιπέρι." : "Tonnarelli, pecorino, fresh cracked pepper.", price: "€11", tag: "V" as const, cat: isEl ? "Ζυμαρικά" : "Pasta" },
-  { name: "Aperol Spritz", desc: isEl ? "Aperol, prosecco, σόδα, φέτα πορτοκάλι." : "Aperol, prosecco, soda, orange wheel.", price: "€6.50", tag: "STAR" as const, cat: "Spritz" },
-  { name: "Affogato", desc: isEl ? "Espresso περιχυμένος σε παγωτό βανίλια." : "Espresso poured over vanilla gelato.", price: "€4.50", tag: "V" as const, cat: isEl ? "Καφές" : "Coffee" },
+  { 
+    name: isEl ? "Κλασσική Μαργαρίτα" : "Margarita Classica", 
+    desc: isEl ? "San Marzano, fior di latte, βασιλικός, ελαιόλαδο." : "San Marzano, fior di latte, basil, olive oil.", 
+    price: "€9", 
+    tag: "STAR" as const, 
+    cat: isEl ? "Σπεσιαλιτέ Πίτσα" : "Signature Pizza",
+    status: "AVAILABLE" 
+  },
+  { 
+    name: "Cacio e Pepe", 
+    desc: isEl ? "Tonnarelli, πεκορίνο, φρεσκοτριμμένο πιπέρι." : "Tonnarelli, pecorino, fresh cracked pepper.", 
+    price: "€11", 
+    tag: "V" as const, 
+    cat: isEl ? "Ζυμαρικά" : "Pasta",
+    status: "AVAILABLE" 
+  },
+  { 
+    name: "Aperol Spritz", 
+    desc: isEl ? "Aperol, prosecco, σόδα, φέτα πορτοκάλι." : "Aperol, prosecco, soda, orange wheel.", 
+    price: "€6.50", 
+    tag: "STAR" as const, 
+    cat: "Spritz",
+    status: "AVAILABLE" 
+  },
+  { 
+    name: isEl ? "Αφογκάτο" : "Affogato", 
+    desc: isEl ? "Espresso περιχυμένος σε παγωτό βανίλια." : "Espresso poured over vanilla gelato.", 
+    price: "€4.50", 
+    tag: "V" as const, 
+    cat: isEl ? "Καφές" : "Coffee",
+    status: "AVAILABLE" 
+  },
 ];
 
 function Home() {
   const { isEl } = useLanguage();
   const highlights = getHighlights(isEl);
 
-  // Locked to English regardless of language state
-  const marqueeWords = ["Pizza", "Pasta", "Spritz", "Coffee", "Daisies", "Zero drama", "Full flavor"];
+  const marqueeWords = isEl 
+    ? ["Πίτσα", "Πάστα", "Spritz", "Καφές", "Μαργαρίτες", "Μηδέν δράμα", "Φουλ γεύση"]
+    : ["Pizza", "Pasta", "Spritz", "Coffee", "Daisies", "Zero drama", "Full flavor"];
 
   const reviews = [
     {
@@ -68,7 +97,6 @@ function Home() {
               {isEl 
                 ? "Πίτσα στον ξυλόφουρνο, φρέσκα ζυμαρικά, fizzy spritz & αυθεντικός καφές."
                 : "Wood-fired pizza, twirly pasta, fizzy spritz & honest coffee."}
-              {/* Tagline locked to English */}
               <span className="block font-display text-2xl mt-4 italic">
                 Zero drama. Full flavor.
               </span>
@@ -84,7 +112,7 @@ function Home() {
           </div>
         </FadeIn>
 
-        {/* Marquee - always English */}
+        {/* Marquee */}
         <div className="relative bg-burgundy text-cream py-4 overflow-hidden border-y border-burgundy">
           <div className="marquee-track whitespace-nowrap font-display text-2xl">
             {Array.from({ length: 2 }).map((_, k) => (
@@ -107,7 +135,7 @@ function Home() {
             <div className="relative rounded-[2.5rem] overflow-hidden h-[400px] md:h-[550px] shadow-[0_30px_60px_-30px_rgba(116,0,25,0.3)] group">
               <img 
                 src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80" 
-                alt="Making artisan dough" 
+                alt={isEl ? "Φτιάχνοντας χειροποίητη ζύμη" : "Making artisan dough"} 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
               />
             </div>
@@ -116,7 +144,7 @@ function Home() {
                 {isEl ? "Η φιλοσοφια μας" : "Our philosophy"}
               </span>
               <h2 className="font-display text-5xl md:text-6xl text-burgundy mt-4 leading-[1.1]">
-                {isEl ? "Από τα χέρια μας," : "Hand-picked,"}<br/>
+                {isEl ? "Από τα χέρια μας ," : "Hand-picked,"}<br/>
                 {isEl ? "στο πιάτο σου." : "hand-tossed."}
               </h2>
               <p className="mt-6 text-lg text-burgundy/80 leading-relaxed">
@@ -151,22 +179,35 @@ function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {highlights.map((h, i) => (
-              <FadeIn key={h.name} delay={i * 100}>
-                <article className="h-full group relative bg-card rounded-3xl p-6 border border-burgundy/10 hover:border-burgundy/40 transition-all hover:-translate-y-1">
-                  <Daisy className="absolute -top-3 -right-3 w-12 h-12 opacity-0 group-hover:opacity-100 transition-opacity spin-slow" petalColor="var(--pink)" />
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-burgundy/60">
-                    {h.cat}
-                  </div>
-                  <h3 className="font-display text-2xl text-burgundy mt-2">{h.name}</h3>
-                  <p className="text-sm text-burgundy/70 mt-2 leading-relaxed">{h.desc}</p>
-                  <div className="mt-5 flex items-center justify-between">
-                    <Tag kind={h.tag} />
-                    <span className="font-display text-2xl text-burgundy">{h.price}</span>
-                  </div>
-                </article>
-              </FadeIn>
-            ))}
+            {highlights.map((h, i) => {
+              const isUnavailable = h.status === "UNAVAILABLE" || h.status === "UNAVAILABLE_TODAY";
+              return (
+                <FadeIn key={h.name} delay={i * 100}>
+                  <article className={`h-full group relative bg-card rounded-3xl p-6 border border-burgundy/10 transition-all hover:-translate-y-1 ${
+                    isUnavailable ? "opacity-50 grayscale pointer-events-none" : "hover:border-burgundy/40"
+                  }`}>
+                    <Daisy className="absolute -top-3 -right-3 w-12 h-12 opacity-0 group-hover:opacity-100 transition-opacity spin-slow" petalColor="var(--pink)" />
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-burgundy/60">
+                      {h.cat}
+                    </div>
+                    <h3 className={`font-display text-2xl text-burgundy mt-2 ${isUnavailable ? "line-through" : ""}`}>{h.name}</h3>
+                    <p className="text-sm text-burgundy/70 mt-2 leading-relaxed">{h.desc}</p>
+                    <div className="mt-5 flex items-center justify-between">
+                      <Tag kind={h.tag} />
+                      {isUnavailable ? (
+                        <span className="text-[10px] sm:text-xs font-bold text-red-500 uppercase tracking-widest bg-red-100/50 border border-red-200 px-2 py-1 rounded-md">
+                          {h.status === "UNAVAILABLE_TODAY" 
+                            ? (isEl ? "Εξαντληθηκε" : "Sold Out") 
+                            : (isEl ? "Μη Διαθεσιμο" : "Unavailable")}
+                        </span>
+                      ) : (
+                        <span className="font-display text-2xl text-burgundy">{h.price}</span>
+                      )}
+                    </div>
+                  </article>
+                </FadeIn>
+              );
+            })}
           </div>
         </FadeIn>
       </section>
@@ -246,7 +287,6 @@ function Home() {
   );
 }
 
-// Custom Scroll Animation Component
 function FadeIn({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

@@ -74,12 +74,16 @@ function ContactPage() {
           </div>
 
           <div className="relative rounded-3xl overflow-hidden border border-burgundy/15 min-h-[500px] bg-pink">
+            {/* Google Maps iframe */}
             <iframe
               title="Map to μαργαριτα"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=23.50%2C41.05%2C23.62%2C41.12&layer=mapnik&marker=41.0853%2C23.5527"
-              className="w-full h-full absolute inset-0"
+              src="https://maps.google.com/maps?q=41.0853,23.5527&z=16&output=embed"
+              className="w-full h-full absolute inset-0 border-0"
               loading="lazy"
+              allowFullScreen
             />
+            
+            {/* Καρτέλα με πληροφορίες πάνω από τον χάρτη */}
             <div className="absolute bottom-4 left-4 right-4 bg-cream/95 backdrop-blur rounded-2xl p-4 flex items-center gap-3 border border-burgundy/15">
               <Daisy className="w-10 h-10 shrink-0" petalColor="var(--pink)" />
               <div>
@@ -87,7 +91,7 @@ function ContactPage() {
                 <p className="text-xs text-burgundy/70 mt-1">Άγρα, Σέρρες 621 23</p>
               </div>
               <a
-                href="https://www.openstreetmap.org/?mlat=41.0853&mlon=23.5527#map=14/41.0853/23.5527"
+                href="https://www.google.com/maps/search/?api=1&query=41.0853,23.5527"
                 target="_blank" rel="noreferrer"
                 className="ml-auto bg-burgundy text-cream text-xs font-semibold px-3 py-2 rounded-full"
               >
