@@ -7,6 +7,8 @@ import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { Search } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useCartStore } from '@/store/cartStore';
+import { CartDrawer } from '@/components/CartDrawer';
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
@@ -18,17 +20,23 @@ export const Route = createFileRoute("/menu")({
   component: MenuPage,
 });
 
-// Ενημερώνουμε τον τύπο για να κρατάει το όνομα ΚΑΙ το status του υλικού
-type MissingIngredient = { name: string; status: string };
-type Item = { name: string; desc: string; price: string; tags?: TagKind[]; status: string; missingIngredients?: MissingIngredient[] };
+// Ενημερωμένοι τύποι για να υποστηρίζουν το καλάθι και τις ελλείψεις
+type MissingIngredient = { name: string; originalName: string; status: string };
+type Item = { id: number; name: string; desc: string; price: string; tags?: TagKind[]; status: string; missingIngredients?: MissingIngredient[]; ingredients?: string[] };
 type Section = { title: string; blurb?: string; items: Item[] };
 
 function MenuPage() {
   const { isEl } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
-
   const queryClient = useQueryClient();
+
+  const addItem = useCartStore((state) => state.addItem);
+
+  // States για το Modal του Πιάτου
+  const [selectedDish, setSelectedDish] = useState<Item | null>(null);
+  const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
+  const [itemNote, setItemNote] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ['menuData'],
@@ -78,8 +86,6 @@ function MenuPage() {
     const dbItems = data.items;
     const dbIngredients = data.ingredients;
 
-    // Χαρτογραφούμε τα υλικά για να βρίσκουμε εύκολα το status τους
-    // Χαρτογραφούμε ΟΛΟ το αντικείμενο του υλικού για να έχουμε τις μεταφράσεις
     const ingredientMap = new Map<string, any>();
     dbIngredients.forEach(ing => {
       ingredientMap.set(ing.name, ing);
@@ -116,27 +122,26 @@ function MenuPage() {
       const tags: TagKind[] = [];
       if (item.is_chef_choice) tags.push("STAR");
 
-      // Βρίσκουμε ποια υλικά λείπουν και τι status έχουν
-      // Βρίσκουμε ποια υλικά λείπουν και μεταφράζουμε το όνομά τους
       let missingFromThisDish: MissingIngredient[] = [];
       if (Array.isArray(item.ingredients)) {
         item.ingredients.forEach((ingName: string) => {
           const ing = ingredientMap.get(ingName);
           if (ing && (ing.status === 'UNAVAILABLE' || ing.status === 'UNAVAILABLE_TODAY')) {
-            // Επιλογή ονόματος βάσει γλώσσας (αν δεν έχει name_en, κρατάει το name)
             const translatedName = isEl ? ing.name : (ing.name_en || ing.name);
-            missingFromThisDish.push({ name: translatedName, status: ing.status });
+            missingFromThisDish.push({ name: translatedName, originalName: ingName, status: ing.status });
           }
         });
       }
 
       sectionsMap.get(groupId)!.items.push({
+        id: item.id,
         name: itemName,
         desc: itemDesc,
         price: `€${Number(item.price).toFixed(2)}`,
         tags: tags.length > 0 ? tags : undefined,
         status: item.status,
-        missingIngredients: missingFromThisDish
+        missingIngredients: missingFromThisDish,
+        ingredients: item.ingredients || []
       });
     });
 
@@ -263,7 +268,6 @@ function MenuPage() {
                     const isUnavailable = it.status === "UNAVAILABLE_TODAY" || it.status === "UNAVAILABLE";
                     const isUnavailableToday = it.status === "UNAVAILABLE_TODAY";
 
-                    // Φιλτράρουμε τα υλικά ανάλογα το status τους
                     const missingToday = it.missingIngredients?.filter(ing => ing.status === 'UNAVAILABLE_TODAY').map(i => i.name) || [];
                     const missingPerm = it.missingIngredients?.filter(ing => ing.status === 'UNAVAILABLE').map(i => i.name) || [];
 
@@ -284,7 +288,6 @@ function MenuPage() {
                           
                           <p className="text-burgundy/70 text-sm mt-1 leading-relaxed max-w-xl">{it.desc}</p>
                           
-                          {/* ΕΜΦΑΝΙΣΗ ΕΛΛΕΙΨΕΩΝ ΜΕ ⚠️ */}
                           <div className="mt-1.5 space-y-1">
                             {missingToday.length > 0 && (
                               <p className="text-amber-600 text-sm font-semibold">
@@ -308,7 +311,20 @@ function MenuPage() {
                               : (isEl ? "Μη Διαθεσιμο" : "Unavailable")}
                           </span>
                         ) : (
-                          <span className="font-display text-2xl text-burgundy shrink-0">{it.price}</span>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span className="font-display text-2xl text-burgundy">{it.price}</span>
+                            <button 
+                              onClick={() => { 
+                                setSelectedDish(it); 
+                                // Προ-επιλέγουμε τα υλικά που λείπουν
+                                setRemovedIngredients(it.missingIngredients?.map(m => m.originalName) || []); 
+                                setItemNote(""); 
+                              }}
+                              className="bg-pink text-burgundy text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-burgundy/20 hover:bg-burgundy hover:text-cream transition-colors"
+                            >
+                              + {isEl ? 'Προσθηκη' : 'Add'}
+                            </button>
+                          </div>
                         )}
                       </li>
                     );
@@ -319,6 +335,91 @@ function MenuPage() {
           ))
         )}
       </section>
+
+      {/* Modal Παραμετροποίησης Πιάτου */}
+      {selectedDish && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedDish(null)} />
+          
+          <div className="relative bg-cream w-full max-w-lg rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <h2 className="font-display text-3xl text-burgundy mb-2">{selectedDish.name}</h2>
+            <p className="text-burgundy/70 text-sm mb-6 pb-4 border-b border-burgundy/10">{selectedDish.desc}</p>
+            
+            <div className="overflow-y-auto flex-1 space-y-6 pb-6">
+              
+              {/* Αφαίρεση Υλικών */}
+              {selectedDish.ingredients && selectedDish.ingredients.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-burgundy uppercase tracking-widest text-xs mb-3">
+                    {isEl ? "Αφαιρεση Υλικων (Προαιρετικο)" : "Remove Ingredients (Optional)"}
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedDish.ingredients.map(ing => {
+                      const isMissing = selectedDish.missingIngredients?.some(m => m.originalName === ing);
+                      const isRemoved = removedIngredients.includes(ing);
+
+                      return (
+                        <label key={ing} className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isMissing ? 'opacity-70 cursor-not-allowed bg-burgundy/5' : 'cursor-pointer hover:bg-pink/20'}`}>
+                          <input 
+                            type="checkbox" 
+                            className="w-5 h-5 accent-burgundy"
+                            checked={isRemoved}
+                            disabled={isMissing}
+                            onChange={(e) => {
+                              if (isMissing) return; 
+                              if (e.target.checked) setRemovedIngredients([...removedIngredients, ing]);
+                              else setRemovedIngredients(removedIngredients.filter(i => i !== ing));
+                            }}
+                          />
+                          <span className={`text-sm flex items-center gap-2 ${isRemoved ? 'line-through text-burgundy/50' : 'text-burgundy'}`}>
+                            {isEl ? `Χωρίς ${ing}` : `No ${ing}`}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Σχόλια Πιάτου */}
+              <div>
+                <h3 className="font-semibold text-burgundy uppercase tracking-widest text-xs mb-3">
+                  {isEl ? "Ειδικες Οδηγιες (Προαιρετικο)" : "Special Instructions (Optional)"}
+                </h3>
+                <textarea 
+                  value={itemNote}
+                  onChange={(e) => setItemNote(e.target.value)}
+                  className="w-full bg-white border border-burgundy/20 rounded-xl px-4 py-3 text-sm text-burgundy focus:outline-none focus:border-burgundy resize-none h-20"
+                  placeholder={isEl ? "π.χ. Καλοψημένη, χωρίς πάγο κλπ." : "e.g. Well done, no ice..."}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-burgundy/10 flex gap-3 mt-auto">
+              <button onClick={() => setSelectedDish(null)} className="px-6 py-3 rounded-xl font-bold text-burgundy bg-burgundy/5 hover:bg-burgundy/10 transition-colors">
+                {isEl ? "Ακυρωση" : "Cancel"}
+              </button>
+              <button 
+                onClick={() => {
+                  addItem({
+                    id: selectedDish.id,
+                    name: selectedDish.name,
+                    price: Number(selectedDish.price.replace('€', '')),
+                    removedIngredients,
+                    itemNote
+                  });
+                  setSelectedDish(null);
+                }} 
+                className="flex-1 bg-burgundy text-cream py-3 rounded-xl font-bold hover:bg-burgundy/90 transition-colors"
+              >
+                {isEl ? `Προσθήκη · ${selectedDish.price}` : `Add · ${selectedDish.price}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <CartDrawer />
     </Layout>
   );
 }
