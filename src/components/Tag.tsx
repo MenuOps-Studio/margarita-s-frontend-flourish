@@ -10,7 +10,8 @@ export function Tag({ kind }: { kind: TagKind }) {
     const map = {
       V: { label: isEl ? "Χορτοφαγικό" : "Vegetarian", short: "V", Icon: Leaf, bg: "bg-pink", fg: "text-burgundy" },
       VG: { label: isEl ? "Vegan" : "Vegan", short: "VG", Icon: Sprout, bg: "bg-burgundy", fg: "text-cream" },
-      STAR: { label: isEl ? "Σπεσιαλιτέ" : "Signature", short: "★", Icon: Star, bg: "bg-cream border border-burgundy", fg: "text-burgundy" },
+      // Αλλάξαμε το short από "★" σε "S"
+      STAR: { label: isEl ? "Σπεσιαλιτέ" : "Signature", short: "S", Icon: Star, bg: "bg-cream border border-burgundy", fg: "text-burgundy" },
     };
     return map[kind];
   };
@@ -20,10 +21,12 @@ export function Tag({ kind }: { kind: TagKind }) {
   return (
     <span
       title={t.label}
-      className={`inline-flex items-center gap-1 ${t.bg} ${t.fg} text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full`}
+      // Προστέθηκε το leading-none για τέλεια κάθετη στοίχιση του κειμένου με το εικονίδιο
+      className={`inline-flex items-center gap-1 ${t.bg} ${t.fg} text-[10px] leading-none font-bold uppercase tracking-wider px-2 py-1 rounded-full`}
     >
-      <t.Icon className="w-3 h-3" />
-      {t.short}
+      {/* Προστέθηκε το shrink-0 για να μην παραμορφώνεται το εικονίδιο σε μικρές οθόνες */}
+      <t.Icon className="w-3 h-3 shrink-0" />
+      <span>{t.short}</span>
     </span>
   );
 }

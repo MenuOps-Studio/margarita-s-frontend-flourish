@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useCartStore } from '@/store/cartStore';
 import { CartDrawer } from '@/components/CartDrawer';
+import { Link } from '@tanstack/react-router';
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
@@ -418,7 +419,22 @@ function MenuPage() {
           </div>
         </div>
       )}
-      
+      {/* Κουμπί Ενεργής Παραγγελίας (Αν υπάρχει στη μνήμη) */}
+      {typeof window !== 'undefined' && localStorage.getItem('margarita_active_order') && (
+        <div className="fixed bottom-24 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none animate-bounce">
+          <Link 
+            to="/order/$orderId"
+            params={{ orderId: localStorage.getItem('margarita_active_order') || '' }}
+            className="pointer-events-auto flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-full shadow-lg border border-emerald-500 hover:bg-emerald-700 transition-colors"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+            </span>
+            <span className="font-bold text-sm">{isEl ? 'Προβολή Ενεργής Παραγγελίας' : 'View Active Order'}</span>
+          </Link>
+        </div>
+      )}     
       <CartDrawer />
     </Layout>
   );

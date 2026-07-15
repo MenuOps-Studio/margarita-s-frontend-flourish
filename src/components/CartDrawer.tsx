@@ -47,12 +47,21 @@ export function CartDrawer() {
       return;
     }
 
-    clearCart();
+   clearCart();
     setIsOpen(false);
     
+    // Αποθήκευση της παραγγελίας στη μνήμη του κινητού (για να μην τη χάσει αν κλείσει το site)
+    localStorage.setItem('margarita_active_order', data.id);
+
+    // Μεταφορά στο νέο URL παρακολούθησης
+    window.location.href = `/order/${data.id}`;
+    
+    // Παίρνουμε το νούμερο που μόλις έφτιαξε αυτόματα η βάση
+    const orderNum = data.daily_order_number || data.id;
+
     // Εδώ ιδανικά κάνουμε redirect στη σελίδα Live Tracking (Φάση 4)
     // π.χ. window.location.href = `/order/${data.id}`;
-    alert(isEl ? 'Η παραγγελία εστάλη επιτυχώς!' : 'Order sent successfully!');
+    alert(isEl ? `Η παραγγελία #${orderNum} εστάλη επιτυχώς!` : `Order #${orderNum} sent successfully!`);
   }
 
   return (
