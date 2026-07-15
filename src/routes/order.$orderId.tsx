@@ -15,6 +15,8 @@ function OrderTrackingPage() {
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const hasAlerted = useRef(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioCtxRef = useRef<any>(null);
 
   useEffect(() => {
     fetchOrder();
@@ -53,12 +55,36 @@ function OrderTrackingPage() {
     setIsLoading(false);
   }
 
+  // Ξεκλειδώνει τον ήχο στο iPhone με ένα tap
+  function unlockAudio() {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+    
+    // Παίζουμε έναν σιωπηλό ήχο για να πάρει "άδεια" ο Safari
+    const osc = audioCtxRef.current.createOscillator();
+    const gain = audioCtxRef.current.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtxRef.current.destination);
+    osc.start();
+    osc.stop(audioCtxRef.current.currentTime + 0.1);
+    
+    setAudioUnlocked(true);
+  }
+
   // Συνάρτηση Ήχου και Δόνησης
   function playReadyAlert() {
-    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]); // Δόνηση
+    // Δόνηση (Δουλεύει μόνο σε Android)
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]); 
     
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Αν δεν έχει ξεκλειδωθεί, φτιάχνουμε νέο context
+      const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+      
       const playChime = (freq: number, delay: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -71,9 +97,10 @@ function OrderTrackingPage() {
         osc.start(ctx.currentTime + delay);
         osc.stop(ctx.currentTime + delay + 0.5);
       };
-      playChime(523.25, 0); // C5
-      playChime(659.25, 0.2); // E5
-      playChime(783.99, 0.4); // G5
+      
+      playChime(523.25, 0); // Ντο
+      playChime(659.25, 0.2); // Μι
+      playChime(783.99, 0.4); // Σολ
     } catch (e) { console.error("Audio not supported"); }
   }
 
@@ -100,16 +127,25 @@ function OrderTrackingPage() {
         <div className="bg-white rounded-3xl p-8 shadow-xl border border-burgundy/10 relative overflow-hidden">
           
           {/* Header */}
-          <div className="text-center mb-10">
-            <h1 className="font-display text-4xl text-burgundy mb-2">
-              {isEl ? "Παραγγελία" : "Order"} #{order.daily_order_number || order.id}
-            </h1>
-            <p className="text-burgundy/60 font-medium">
-              {order.table_number !== 'Άγνωστο' && order.table_number !== 'Πακέτο' 
-                ? (isEl ? `Τραπέζι ${order.table_number}` : `Table ${order.table_number}`)
-                : (isEl ? 'Πακέτο / Takeaway' : 'Takeaway')}
-            </p>
-          </div>
+            <div className="text-center mb-10">
+                {/* Κουμπί Ενεργοποίησης Ήχου για iOS */}
+                    {!audioUnlocked && status !== 'READY' && status !== 'COMPLETED' && status !== 'CANCELLED' && (
+                        <button 
+                        onClick={unlockAudio} 
+                        className="w-full mb-8 bg-pink/30 text-burgundy py-3 rounded-2xl border border-burgundy/20 font-bold flex items-center justify-center gap-2 hover:bg-pink/50 transition-colors shadow-sm animate-pulse"
+                        >
+                        🔔 {isEl ? "Ενεργοποίηση Ήχου Ειδοποίησης" : "Enable Notification Sound"}
+                        </button>
+                    )}
+                            <h1 className="font-display text-4xl text-burgundy mb-2">
+                {isEl ? "Παραγγελία" : "Order"} #{order.daily_order_number || order.id}
+                </h1>
+                <p className="text-burgundy/60 font-medium">
+                {order.table_number !== 'Άγνωστο' && order.table_number !== 'Πακέτο' 
+                    ? (isEl ? `Τραπέζι ${order.table_number}` : `Table ${order.table_number}`)
+                    : (isEl ? 'Πακέτο / Takeaway' : 'Takeaway')}
+                </p>
+            </div>
 
           {/* Ακυρωμένη Παραγγελία */}
           {status === 'CANCELLED' ? (
