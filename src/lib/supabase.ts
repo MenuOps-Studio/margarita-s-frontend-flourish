@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Replace these with your ACTUAL URL and Anon Key from Supabase 
-// (Find them in Supabase -> Project Settings -> API)
-const supabaseUrl = 'https://yolfsfforkibqvagahoq.supabase.co';
-const supabaseAnonKey = 'sb_publishable_6vQgN5SXaY9lfA8vR8pQgw_SdbPu4It';
+// Διαβάζουμε τα κλειδιά με ασφάλεια
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Δημιουργούμε τον client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

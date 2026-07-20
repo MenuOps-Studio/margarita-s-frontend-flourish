@@ -84,6 +84,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Pizza, pasta, spritz & coffee in Serres." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      // PWA & Apple Tags
+      { name: "theme-color", content: "#7a1a36" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Makan" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -93,6 +98,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@400;600;800&family=DM+Sans:wght@400;500;600;700&display=swap",
       },
+      // Σύνδεση με το manifest.json & Apple Icon
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
     ],
   }),
   shellComponent: RootShell,
