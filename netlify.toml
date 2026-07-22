@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[dev]
+  framework = "#custom"
+  command = "npx vite dev --host 127.0.0.1 --port 5173 --strictPort"
+  targetPort = 5173
+  port = 8888
