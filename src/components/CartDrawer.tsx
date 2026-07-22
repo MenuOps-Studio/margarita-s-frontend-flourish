@@ -46,14 +46,14 @@ export function CartDrawer() {
 
     const orderData = {
       restaurant_id: 3, 
-      order_type: orderType, // Κλειδωμένο δυναμικά
-      table_number: urlTable, // Αν είναι takeaway θα είναι null
+      order_type: orderType, 
+      table_number: urlTable, 
       items: items, 
       total_amount: totalPrice,
       customer_last_name: lastName || null, 
       notes: comments,
       payment_status: 'UNPAID', 
-      prep_status: 'PENDING'
+      prep_status: 'WAITING' // Αλλάξαμε το PENDING σε WAITING
     };
 
     // 1. Καταγραφή της παραγγελίας στη Supabase
